@@ -105,3 +105,33 @@ class ProtectedView(APIView):
     def get(self, request):
         return Response({"message": "You are authenticated!"})
     
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"message": "Successfully logged out."}, status=200)
+        except Exception as e:
+            return Response({"error": "Invalid token."}, status=400)
+        
+
+class UnregisteredUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['doctor', 'patient']:
+            return Response({
+                "message": "You need to register as a doctor or patient to access the system.",
+                "actions": {
+                    "register_as_patient": "/register/patient/",
+                    "register_as_doctor": "/register/doctor/",
+                    "logout": "/logout/"
+                }
+            }, status=403)
+        return Response({"message": "Welcome to the system!"})
+    

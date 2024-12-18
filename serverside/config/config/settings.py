@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'registration',
     'appointments',
     'notification',
-    'prescription'
+    'prescription',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
