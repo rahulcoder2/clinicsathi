@@ -2,10 +2,14 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .api.serializers import UserRegistrationSerializer, PatientRegistrationSerializer, DoctorRegistrationSerializer
+from .api.serializers import UserRegistrationSerializer, PatientRegistrationSerializer, DoctorRegistrationSerializer, AppointmentSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .api.serializers import CustomTokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import ListAPIView
+from rest_framework.filters import SearchFilter
+from registration.models import User, Appointment
+from .utils import send_email_notification
 import json
 
 # Create your views here.
@@ -135,3 +139,60 @@ class UnregisteredUserView(APIView):
             }, status=403)
         return Response({"message": "Welcome to the system!"})
     
+class AppointmentBookingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'patient':
+            return Response({"error": "Only patients can book appointments."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = AppointmentSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+        
+    
+class DoctorManageAppointmentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'doctor':
+            return Response({"error": "Only doctors can manage appointments."}, status=status.HTTP_403_FORBIDDEN)
+
+        appointments = Appointment.objects.filter(doctor=request.user)
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
+
+    def put(self, request, appointment_id):
+        if request.user.role != 'doctor':
+            return Response({"error": "Only doctors can manage appointments."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            appointment = Appointment.objects.get(id=appointment_id, doctor=request.user)
+        except Appointment.DoesNotExist:
+            return Response({"error": "Appointment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Allow doctors to confirm appointments or add a prescription
+        serializer = AppointmentSerializer(appointment, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PatientCompleteAppointmentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, appointment_id):
+        if request.user.role != 'patient':
+            return Response({"error": "Only patients can complete appointments."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            appointment = Appointment.objects.get(id=appointment_id, patient=request.user, status='confirmed')
+        except Appointment.DoesNotExist:
+            return Response({"error": "Appointment not found or not confirmed."}, status=status.HTTP_404_NOT_FOUND)
+
+        appointment.status = 'completed'
+        appointment.save()
+        return Response({"message": "Appointment marked as completed."})

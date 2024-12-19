@@ -1,9 +1,6 @@
 from rest_framework import serializers
-from ..models import User, DoctorProfile, PatientProfile
+from ..models import User, DoctorProfile, PatientProfile, Appointment
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-
-
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, required=True)
@@ -97,3 +94,42 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         })
         return data
 
+class DoctorSearchSerializer(serializers.ModelSerializer):
+    specialization = serializers.CharField(source='doctor_profile.specialization')
+
+    class Meta:
+        model = User
+        fields = ['username', 'specialization']
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    doctor_username = serializers.CharField(write_only=True)  # Accept doctor username instead of ID
+    prescription = serializers.CharField(read_only=True)  # Patients cannot modify this
+
+    class Meta:
+        model = Appointment
+        fields = ['id', 'doctor_username', 'date', 'time', 'status', 'reason', 'token', 'prescription']
+        read_only_fields = ['status', 'token', 'prescription']
+
+    def validate(self, data):
+        # Validate doctor existence
+        try:
+            doctor = User.objects.get(username=data['doctor_username'], role='doctor')
+            data['doctor'] = doctor
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Doctor with the given username does not exist.")
+
+        # Ensure no double booking
+        if Appointment.objects.filter(
+            doctor=data['doctor'],
+            date=data['date'],
+            time=data['time']
+        ).exists():
+            raise serializers.ValidationError("This time slot is already booked.")
+
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('doctor_username')  # Remove username after converting to the doctor instance
+        validated_data['patient'] = self.context['request'].user  # Set the logged-in user as the patient
+        return super().create(validated_data)

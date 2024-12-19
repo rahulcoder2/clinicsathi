@@ -69,7 +69,7 @@ class User(AbstractUser):
 class PatientProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
     date_of_birth = models.DateField()
-    phone = models.CharField(max_length=15, unique=True)
+    phone = models.CharField(max_length=15)
     address = models.TextField()
 
     def __str__(self):
@@ -106,3 +106,63 @@ class DoctorProfile(models.Model):
     def __str__(self):
         return f"Dr. {self.user.username} - {self.specialization}"
     
+class Appointment(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('completed', 'Completed'),
+        ('canceled', 'Canceled'),
+    ]
+
+    doctor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        limit_choices_to={'role': 'doctor'},
+        related_name='appointments_for_doctor'
+    )
+    patient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        limit_choices_to={'role': 'patient'},
+        related_name='appointments_for_patient'
+    )
+    date = models.DateField()
+    time = models.TimeField()
+    token = models.PositiveIntegerField(blank=True, null=True, editable=False)  # Auto-generated token
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', editable=False)
+    reason = models.TextField(blank=True, null=True)  # Optional reason for appointment
+    prescription = models.TextField(blank=True, null=True)  # Prescription provided by the doctor
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('doctor', 'date', 'time')  # Prevent double bookings
+        ordering = ['date', 'time', 'token']
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            # Generate sequential token for the day
+            today_appointments = Appointment.objects.filter(
+                doctor=self.doctor, date=self.date
+            ).count()
+            self.token = today_appointments + 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Appointment with Dr. {self.doctor.username} for {self.patient.username} on {self.date} at {self.time} - Status: {self.status}"
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    event_type = models.CharField(max_length=50)  # E.g., 'appointment_created', 'prescription_uploaded'
+
+    def __str__(self):
+        return f"Notification to {self.recipient.username} - {self.subject}"
+
+

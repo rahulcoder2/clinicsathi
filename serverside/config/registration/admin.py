@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, DoctorProfile, PatientProfile
+from .models import User, DoctorProfile, PatientProfile, Appointment, Notification
 # Register your models here.
 
 @admin.register(User)
@@ -51,4 +51,18 @@ class PatientProfileAdmin(admin.ModelAdmin):
         return super().get_queryset(request).filter(user__role='patient')
 
 
+@admin.register(Appointment)
+class AppointmentAdmin(admin.ModelAdmin):
+    list_display = ['id', 'doctor', 'patient', 'date', 'time', 'status', 'token']
+    list_filter = ['doctor', 'status', 'date']
+    search_fields = ['doctor__username', 'patient__username', 'doctor__doctor_profile__specialization']
+    ordering = ['date', 'time', 'token']
+
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['recipient', 'subject', 'event_type', 'sent_at']
+    list_filter = ['event_type', 'sent_at']
+    search_fields = ['recipient__username', 'subject']
 
