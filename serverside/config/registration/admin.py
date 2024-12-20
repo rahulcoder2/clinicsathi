@@ -43,7 +43,7 @@ class DoctorProfileAdmin(admin.ModelAdmin):
 # PatientProfile Admin
 @admin.register(PatientProfile)
 class PatientProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'date_of_birth', 'address')
+    list_display = ('user', 'phone')
     search_fields = ('user__username', 'user__email')
 
     def get_queryset(self, request):

@@ -68,9 +68,8 @@ class User(AbstractUser):
 
 class PatientProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
-    date_of_birth = models.DateField()
     phone = models.CharField(max_length=15)
-    address = models.TextField()
+    
 
     def __str__(self):
         return f"{self.user.username} (Patient)"
