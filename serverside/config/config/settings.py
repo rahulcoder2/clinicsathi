@@ -45,13 +45,6 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'registration',
-<<<<<<< HEAD
-    'rest_framework_simplejwt.token_blacklist',
-=======
-    'appointments',
-    'notification',
-    'prescription',
->>>>>>> c341feed481bd8a45573c3bca8786d9b83736d91
 ]
 
 MIDDLEWARE = [

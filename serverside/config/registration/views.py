@@ -10,7 +10,6 @@ from rest_framework.generics import ListAPIView
 from rest_framework.filters import SearchFilter
 from registration.models import User, Appointment
 from .utils import send_email_notification
-from rest_framework_simplejwt.tokens import RefreshToken
 import json
 
 # Create your views here.
