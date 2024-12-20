@@ -6,14 +6,10 @@ from .api.serializers import UserRegistrationSerializer, PatientRegistrationSeri
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .api.serializers import CustomTokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated
-<<<<<<< HEAD
 from rest_framework.generics import ListAPIView
 from rest_framework.filters import SearchFilter
 from registration.models import User, Appointment
 from .utils import send_email_notification
-=======
-from rest_framework_simplejwt.tokens import RefreshToken
->>>>>>> c341feed481bd8a45573c3bca8786d9b83736d91
 import json
 
 # Create your views here.
@@ -113,11 +109,8 @@ class ProtectedView(APIView):
     def get(self, request):
         return Response({"message": "You are authenticated!"})
     
-<<<<<<< HEAD
 from rest_framework_simplejwt.tokens import RefreshToken
 
-=======
->>>>>>> c341feed481bd8a45573c3bca8786d9b83736d91
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -130,10 +123,6 @@ class LogoutView(APIView):
         except Exception as e:
             return Response({"error": "Invalid token."}, status=400)
         
-<<<<<<< HEAD
-
-=======
->>>>>>> c341feed481bd8a45573c3bca8786d9b83736d91
 class UnregisteredUserView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -147,7 +136,6 @@ class UnregisteredUserView(APIView):
                     "logout": "/logout/"
                 }
             }, status=403)
-<<<<<<< HEAD
         return Response({"message": "Welcome to the system!"})
     
 class AppointmentBookingView(APIView):
@@ -207,6 +195,3 @@ class PatientCompleteAppointmentView(APIView):
         appointment.status = 'completed'
         appointment.save()
         return Response({"message": "Appointment marked as completed."})
-=======
-        return Response({"message": "Welcome to the system!"})
->>>>>>> c341feed481bd8a45573c3bca8786d9b83736d91
