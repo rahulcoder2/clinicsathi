@@ -4,38 +4,65 @@ import { z } from "zod";
 import { Form } from "@/components/ui/form";
 import CustomFormField, { FormFieldType } from "../shared/CustomFormField";
 import Link from "next/link";
-
 import { useState } from "react";
-import { UserFormValidation } from "@/lib/validation";
+import { userFormValidation } from "@/lib/validation";
 import SubmitButton from "@/components/shared/SubmitButton";
-// import { useRouter } from "next/navigation";
+import axiosInstance from "@/lib/axiosInstance";
+import { useRouter } from "next/navigation";
 
 const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
 
-  // const router = useRouter();
-
-  // 1. Define your form.
-  const form = useForm<z.infer<typeof UserFormValidation>>({
+  // Define the form using React Hook Form
+  const form = useForm<z.infer<typeof userFormValidation>>({
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
 
-  // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof UserFormValidation>) {
+  // Define the form submission handler
+  async function onSubmit(values: z.infer<typeof userFormValidation>) {
     setIsLoading(true);
-    // const { email, password } = values;
-    // try {
-    //   const userData = { email, password };
-    //   const user = console.log(userData)
-    //   if(user)router.push(`/patient`)
-    // } catch (error) {
-    //   console.log(error);
-    // }
-    setIsLoading(false);
-    console.log(values);
+    setErrorMessage(null);
+
+    const { username, password } = values;
+
+    try {
+      const response = await axiosInstance.post(
+        "/api/login/",
+        { username, password },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Handle successful login
+      const { role } = response.data; // Backend sets token in httpOnly cookie
+
+      // Redirect based on role
+      switch (role) {
+        case "patient":
+          router.push("/patient/dashboard");
+          break;
+        case "doctor":
+          router.push("/doctor/dashboard");
+          break;
+        default:
+          setErrorMessage("Invalid role. Please contact support.");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error.response?.data);
+      setErrorMessage(
+        error.response?.data?.detail || "Login failed. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -46,31 +73,35 @@ const LoginForm = () => {
           <p className="text-blue-500">Schedule your appointment with ease.</p>
         </section>
 
+        {/* Error Message */}
+        {errorMessage && (
+          <p className="text-red-500 text-center mb-4">{errorMessage}</p>
+        )}
+
+        {/* Email Input */}
         <CustomFormField
           control={form.control}
           fieldType={FormFieldType.INPUT}
-          label="Email:"
-          name="email"
+          label="UserName:"
+          name="username"
           placeholder="Enter your email"
         />
+
+        {/* Password Input */}
         <CustomFormField
           control={form.control}
           fieldType={FormFieldType.PASSWORD_INPUT}
           label="Password:"
           name="password"
-          placeholder="Enter you Password"
+          placeholder="Enter your password"
         />
 
-        <div className="flex-between">
-          <CustomFormField
-            control={form.control}
-            fieldType={FormFieldType.CHECKBOX}
-            label="Remember me"
-            name="rememberMe"
-          />
+        <div className="flex justify-end">
+
           <Link href="/?forgetpassword">Forget Password?</Link>
         </div>
 
+        {/* Submit Button */}
         <div className="flex-center flex-col">
           <SubmitButton isLoading={isLoading}>Login</SubmitButton>
 
