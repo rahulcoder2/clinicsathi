@@ -54,7 +54,7 @@ class PatientRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ['user', 'date_of_birth', 'address']
+        fields = ['user', 'phone']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
@@ -89,7 +89,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add additional user information to the token response
         data.update({
             'user_id': self.user.id,
-            'username': self.user.username,
+            'email': self.user.email,
             'role': self.user.role,
         })
         return data
