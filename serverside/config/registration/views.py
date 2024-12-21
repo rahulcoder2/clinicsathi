@@ -10,6 +10,11 @@ from rest_framework.generics import ListAPIView
 from rest_framework.filters import SearchFilter
 from registration.models import User, Appointment
 from .utils import send_email_notification
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_decode
 import json
 
 # Create your views here.
@@ -103,6 +108,7 @@ class DoctorRegistrationView(APIView):
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+
 class ProtectedView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -138,6 +144,59 @@ class UnregisteredUserView(APIView):
             }, status=403)
         return Response({"message": "Welcome to the system!"})
     
+class PasswordResetRequestView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email address is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+            token_generator = PasswordResetTokenGenerator()
+            token = token_generator.make_token(user)
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+
+            reset_link = f"{request.scheme}://{request.get_host()}/password-reset/confirm/{uidb64}/{token}/"
+
+            # Send the reset link via email
+            send_mail(
+                'Password Reset Request',
+                f"Click the link below to reset your password:\n\n{reset_link}",
+                'your_email@example.com',
+                [email],
+                fail_silently=False,
+            )
+            return Response({'message': 'Password reset link sent to your email.'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+class PasswordResetConfirmView(APIView):
+    def post(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+            token_generator = PasswordResetTokenGenerator()
+
+            if not token_generator.check_token(user, token):
+                return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate and set the new password
+            password = request.data.get('password')
+            confirm_password = request.data.get('confirm_password')
+
+            if not password or not confirm_password:
+                return Response({'error': 'Password and confirm password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if password != confirm_password:
+                return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(password)
+            user.save()
+
+            return Response({'message': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
+        except (ValueError, User.DoesNotExist):
+            return Response({'error': 'Invalid token or user.'}, status=status.HTTP_400_BAD_REQUEST)
+
 class AppointmentBookingView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -151,8 +210,23 @@ class AppointmentBookingView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-        
-    
+class AppointmentRescheduleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, appointment_id):
+        try:
+            appointment = Appointment.objects.get(id=appointment_id, patient=request.user)
+        except Appointment.DoesNotExist:
+            return Response({"error": "Appointment not found or access denied."}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        serializer = AppointmentSerializer(appointment, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+ 
 class DoctorManageAppointmentsView(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -54,7 +54,7 @@ class PatientRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ['user', 'date_of_birth', 'address']
+        fields = ['user', 'phone']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
@@ -104,11 +104,11 @@ class DoctorSearchSerializer(serializers.ModelSerializer):
 
 class AppointmentSerializer(serializers.ModelSerializer):
     doctor_username = serializers.CharField(write_only=True)  # Accept doctor username instead of ID
-    prescription = serializers.CharField(read_only=True)  # Patients cannot modify this
+    # prescription = serializers.CharField(read_only=True)  # Patients cannot modify this
 
     class Meta:
         model = Appointment
-        fields = ['id', 'doctor_username', 'date', 'time', 'status', 'reason', 'token', 'prescription']
+        fields = ['doctor_username', 'date', 'time', 'status', 'reason', 'token']
         read_only_fields = ['status', 'token', 'prescription']
 
     def validate(self, data):
