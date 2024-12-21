@@ -6,29 +6,30 @@ import CustomFormField, { FormFieldType } from "../shared/CustomFormField";
 import Link from "next/link";
 import SubmitButton from '../shared/SubmitButton';
 import { useState } from "react";
-import { UserFormValidation } from "@/lib/validation";
-import { hostipalIdentificationTypes } from "@/constants";
-import { SelectItem } from "../ui/select";
+
+
 import FileUploader from "../shared/FileUploader";
+import { doctorFormValidation } from "@/lib/validation";
 // import { useRouter } from "next/navigation";
 
-const HospitalRegisterForm = () => {
+const DoctorRegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const [province, setProvince] = useState(false);
 
   //   const router = useRouter();
 
   // 1. Define your form.
-  const form = useForm<z.infer<typeof UserFormValidation>>({
+  const form = useForm<z.infer<typeof doctorFormValidation>>({
     defaultValues: {
-      email: "",
-      password: "",
-    },
+      user: {
+        username: ""
+      }
+      
+    }
   });
 
   // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof UserFormValidation>) {
+  async function onSubmit(values: z.infer<typeof doctorFormValidation>) {
     setIsLoading(true);
     // const { email, password } = values;
     // try {
@@ -62,37 +63,11 @@ const HospitalRegisterForm = () => {
           <CustomFormField
             fieldType={FormFieldType.INPUT}
             control={form.control}
-            name="hospitalName"
-            label="Hospital Name"
+            name="username"
+            label="User Name"
             placeholder="Hospital Name"
             iconAlt="hospitaluser"
           />
-
-          {/* Province */}
-          <CustomFormField
-            fieldType={FormFieldType.SELECT}
-            control={form.control}
-            name="province"
-            label="Province"
-          ></CustomFormField>
-
-          {/* District and City */}
-
-          <div className="flex flex-col gap-6 xl:flex-row">
-            <CustomFormField
-              fieldType={FormFieldType.SELECT}
-              control={form.control}
-              name="district"
-              label="District"
-            ></CustomFormField>
-
-            <CustomFormField
-              fieldType={FormFieldType.SELECT}
-              control={form.control}
-              name="city"
-              label="City"
-            ></CustomFormField>
-          </div>
 
           {/* EMAIL & PHONE */}
 
@@ -145,20 +120,6 @@ const HospitalRegisterForm = () => {
             </div>
 
             <CustomFormField
-              fieldType={FormFieldType.SELECT}
-              control={form.control}
-              name="identificationType"
-              label="Identification Type"
-              placeholder="Select identification type"
-            >
-              {hostipalIdentificationTypes.map((type, i) => (
-                <SelectItem key={type + i} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </CustomFormField>
-
-            <CustomFormField
               fieldType={FormFieldType.INPUT}
               control={form.control}
               name="identificationNumber"
@@ -178,15 +139,6 @@ const HospitalRegisterForm = () => {
               )}
             />
           </section>
-
-          {/* TERMS AND CONDITIONS */}
-
-          <CustomFormField
-            control={form.control}
-            fieldType={FormFieldType.CHECKBOX}
-            label="Accept terms and conditions"
-            name="termsandconditions"
-          />
         </section>
 
         <div className="flex-center flex-col">
@@ -204,4 +156,4 @@ const HospitalRegisterForm = () => {
   );
 };
 
-export default HospitalRegisterForm;
+export default DoctorRegisterForm;
