@@ -89,7 +89,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add additional user information to the token response
         data.update({
             'user_id': self.user.id,
-            'email': self.user.email,
+            'username': self.user.username,
             'role': self.user.role,
         })
         return data
